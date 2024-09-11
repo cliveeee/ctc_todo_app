@@ -13,7 +13,7 @@ class DetailsScreen extends StatelessWidget {
         elevation: 0,
         centerTitle: true,
         title: Text(
-          task.title,
+          task.name,
           style:
               const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
@@ -22,10 +22,14 @@ class DetailsScreen extends StatelessWidget {
         ),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(
+          20.0,
+        ),
         child: Text(
           task.description,
-          style: const TextStyle(fontSize: 18.0),
+          style: const TextStyle(
+            fontSize: 18.0,
+          ),
         ),
       ),
     );

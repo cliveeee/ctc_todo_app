@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:todo_flutter/models/todos.dart';
 import 'package:todo_flutter/models/details_screen.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:todo_flutter/services/remote_data_source.dart';
 
 class TodoScreen extends StatefulWidget {
   const TodoScreen({super.key});
@@ -13,19 +13,25 @@ class TodoScreen extends StatefulWidget {
 class _TodoScreenState extends State<TodoScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  late Box<ToDo> tasksBox;
+  final RemoteDataSource _remoteDataSource = RemoteDataSource();
+  List<ToDo> _tasks = [];
   ToDo? _editingTask;
 
   @override
   void initState() {
     super.initState();
-    tasksBox = Hive.box<ToDo>('todos');
+    _loadTasks();
+  }
+
+  Future<void> _loadTasks() async {
+    _tasks = await _remoteDataSource.fetchTasks();
+    setState(() {});
   }
 
   void _showTaskDialog({ToDo? task}) {
     if (task != null) {
       _editingTask = task;
-      _titleController.text = task.title;
+      _titleController.text = task.name;
       _descriptionController.text = task.description;
     } else {
       _editingTask = null;
@@ -39,7 +45,9 @@ class _TodoScreenState extends State<TodoScreen> {
         backgroundColor: Colors.grey[800],
         title: Text(
           task == null ? 'Add Task' : 'Edit Task',
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(
+            color: Colors.white,
+          ),
         ),
         contentPadding: const EdgeInsets.all(24.0),
         content: SingleChildScrollView(
@@ -49,25 +57,29 @@ class _TodoScreenState extends State<TodoScreen> {
               TextField(
                 controller: _titleController,
                 decoration: const InputDecoration(
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.white),
-                  ),
+                  border: OutlineInputBorder(),
                   hintText: 'Enter title',
-                  hintStyle: TextStyle(color: Colors.white),
+                  hintStyle: TextStyle(
+                    color: Colors.white,
+                  ),
                 ),
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(
+                  color: Colors.white,
+                ),
               ),
               const SizedBox(height: 15.0),
               TextField(
                 controller: _descriptionController,
                 decoration: const InputDecoration(
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.white),
-                  ),
+                  border: OutlineInputBorder(),
                   hintText: 'Enter description',
-                  hintStyle: TextStyle(color: Colors.white),
+                  hintStyle: TextStyle(
+                    color: Colors.white,
+                  ),
                 ),
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(
+                  color: Colors.white,
+                ),
               ),
             ],
           ),
@@ -89,22 +101,23 @@ class _TodoScreenState extends State<TodoScreen> {
                 );
               } else {
                 if (_editingTask != null) {
-                  _editingTask!.title = title;
+                  _editingTask!.name = title;
                   _editingTask!.description = description;
-                  await _editingTask!.save();
+                  await _remoteDataSource.updateTask(_editingTask!);
                 } else {
                   final newTask = ToDo(
-                    title: title,
+                    id: '',
+                    name: title,
                     description: description,
                     isCompleted: false,
                   );
-                  await tasksBox.add(newTask);
+                  await _remoteDataSource.addTask(newTask);
                 }
 
                 _titleController.clear();
                 _descriptionController.clear();
                 Navigator.of(context).pop();
-                setState(() {});
+                _loadTasks();
               }
             },
             child: Text(task == null ? 'Add' : 'Update'),
@@ -121,8 +134,9 @@ class _TodoScreenState extends State<TodoScreen> {
     );
   }
 
-  void _clearAllTasks() async {
-    await tasksBox.clear();
+  Future<void> _clearAllTasks() async {
+    await _remoteDataSource.clearTasks();
+    await _loadTasks();
   }
 
   @override
@@ -160,11 +174,8 @@ class _TodoScreenState extends State<TodoScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(12.0),
-        child: ValueListenableBuilder(
-          valueListenable: tasksBox.listenable(),
-          builder: (context, Box<ToDo> box, _) {
-            if (box.values.isEmpty) {
-              return Center(
+        child: _tasks.isEmpty
+            ? Center(
                 child: Text(
                   'No tasks yet!',
                   style: TextStyle(
@@ -172,75 +183,73 @@ class _TodoScreenState extends State<TodoScreen> {
                     color: Colors.grey[800],
                   ),
                 ),
-              );
-            }
-
-            return ListView.builder(
-              itemCount: box.values.length,
-              itemBuilder: (context, index) {
-                ToDo task = box.getAt(index)!;
-                return Column(
-                  children: [
-                    Card(
-                      color: Colors.grey[800],
-                      child: ListTile(
-                        leading: Checkbox(
-                          checkColor: Colors.white,
-                          activeColor: Colors.red[500],
-                          value: task.isCompleted,
-                          onChanged: (bool? value) {
-                            task.isCompleted = value!;
-                            task.save();
+              )
+            : ListView.builder(
+                itemCount: _tasks.length,
+                itemBuilder: (context, index) {
+                  ToDo task = _tasks[index];
+                  return Column(
+                    children: [
+                      Card(
+                        color: Colors.grey[800],
+                        child: ListTile(
+                          leading: Checkbox(
+                            checkColor: Colors.white,
+                            activeColor: Colors.red[500],
+                            value: task.isCompleted,
+                            onChanged: (bool? value) async {
+                              task.isCompleted = value!;
+                              await _remoteDataSource.updateTask(task);
+                              setState(() {});
+                            },
+                            side: const BorderSide(
+                              color: Colors.white,
+                              width: 1.5,
+                            ),
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                iconSize: 35.0,
+                                color: Colors.blue[500],
+                                icon: const Icon(Icons.edit),
+                                onPressed: () => _showTaskDialog(task: task),
+                              ),
+                              IconButton(
+                                iconSize: 38.0,
+                                color: Colors.red[500],
+                                icon: const Icon(Icons.delete_forever_rounded),
+                                onPressed: () async {
+                                  await _remoteDataSource.deleteTask(task);
+                                  _loadTasks();
+                                },
+                              ),
+                            ],
+                          ),
+                          title: Text(
+                            task.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18.0,
+                              color: Colors.white,
+                            ),
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => DetailsScreen(task: task),
+                              ),
+                            );
                           },
-                          side: const BorderSide(
-                            color: Colors.white,
-                            width: 1.5,
-                          ),
                         ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              iconSize: 35.0,
-                              color: Colors.blue[500],
-                              icon: const Icon(Icons.edit),
-                              onPressed: () => _showTaskDialog(task: task),
-                            ),
-                            IconButton(
-                              iconSize: 38.0,
-                              color: Colors.red[500],
-                              icon: const Icon(Icons.delete_forever_rounded),
-                              onPressed: () {
-                                task.delete();
-                              },
-                            ),
-                          ],
-                        ),
-                        title: Text(
-                          task.title,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18.0,
-                            color: Colors.white,
-                          ),
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => DetailsScreen(task: task),
-                            ),
-                          );
-                        },
                       ),
-                    ),
-                    const SizedBox(height: 5.0),
-                  ],
-                );
-              },
-            );
-          },
-        ),
+                      const SizedBox(height: 5.0),
+                    ],
+                  );
+                },
+              ),
       ),
     );
   }
