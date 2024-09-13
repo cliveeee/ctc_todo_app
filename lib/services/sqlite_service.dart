@@ -26,13 +26,19 @@ class SQLiteService implements ToDoDataSource {
           'CREATE TABLE todos(id TEXT PRIMARY KEY, name TEXT, description TEXT, isCompleted INTEGER)',
         );
       },
-      version: 1,
+      version: 2, // Increment the version number for schema changes
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          // Handle any migrations needed here if necessary
+        }
+      },
     );
   }
 
   @override
   Future<void> addTask(ToDo task) async {
     final db = await database;
+
     await db.insert(
       'todos',
       task.toMap(),
@@ -45,12 +51,7 @@ class SQLiteService implements ToDoDataSource {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query('todos');
     return List.generate(maps.length, (i) {
-      return ToDo(
-        id: maps[i]['id'],
-        name: maps[i]['name'],
-        description: maps[i]['description'],
-        isCompleted: maps[i]['isCompleted'] == 1,
-      );
+      return ToDo.fromMap(maps[i]);
     });
   }
 

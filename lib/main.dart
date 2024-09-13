@@ -3,14 +3,14 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:todo_flutter/models/todos.dart';
 import 'package:todo_flutter/models/todo_screen.dart';
-import 'package:todo_flutter/services/hive_service.dart'; // Import your Hive service
-import 'package:todo_flutter/services/sqlite_service.dart'; // Import your SQLite service
-import 'package:todo_flutter/services/remote_data_source.dart'; // Import your Remote data source
-import 'package:todo_flutter/services/todo_data_source_factory.dart'; // Import the factory to create the data source
-import 'firebase_options.dart'; // Ensure this path is correct
+import 'package:todo_flutter/services/hive_service.dart';
+import 'package:todo_flutter/services/sqlite_service.dart';
+import 'package:todo_flutter/services/remote_data_source.dart';
+import 'package:todo_flutter/services/todo_data_source_factory.dart';
+import 'firebase_options.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // Ensures Flutter is initialized
+  WidgetsFlutterBinding.ensureInitialized();
 
   await Hive.initFlutter();
   Hive.registerAdapter(ToDoAdapter());

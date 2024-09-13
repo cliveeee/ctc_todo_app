@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:todo_flutter/models/todos.dart';
-import 'package:todo_flutter/models/details_screen.dart';
-import 'package:todo_flutter/services/remote_data_source.dart';
+import 'package:todo_flutter/models/details_screen.dart'; // Import the DetailsScreen
+import 'package:todo_flutter/services/todo_data_source_factory.dart'; // Adjust the import according to your file structure
+import 'package:todo_flutter/services/todo_data_source.dart';
 
 class TodoScreen extends StatefulWidget {
   const TodoScreen({super.key});
@@ -13,18 +14,23 @@ class TodoScreen extends StatefulWidget {
 class _TodoScreenState extends State<TodoScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final RemoteDataSource _remoteDataSource = RemoteDataSource();
+  ToDoDataSource? _remoteDataSource; // Updated to use ToDoDataSource
   List<ToDo> _tasks = [];
   ToDo? _editingTask;
 
   @override
   void initState() {
     super.initState();
-    _loadTasks();
+    _initializeDataSource();
+  }
+
+  Future<void> _initializeDataSource() async {
+    _remoteDataSource = await ToDoDataSourceFactory.create();
+    await _loadTasks();
   }
 
   Future<void> _loadTasks() async {
-    _tasks = await _remoteDataSource.fetchTasks();
+    _tasks = await _remoteDataSource!.fetchTasks();
     setState(() {});
   }
 
@@ -45,9 +51,7 @@ class _TodoScreenState extends State<TodoScreen> {
         backgroundColor: Colors.grey[800],
         title: Text(
           task == null ? 'Add Task' : 'Edit Task',
-          style: const TextStyle(
-            color: Colors.white,
-          ),
+          style: const TextStyle(color: Colors.white),
         ),
         contentPadding: const EdgeInsets.all(24.0),
         content: SingleChildScrollView(
@@ -59,13 +63,9 @@ class _TodoScreenState extends State<TodoScreen> {
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   hintText: 'Enter title',
-                  hintStyle: TextStyle(
-                    color: Colors.white,
-                  ),
+                  hintStyle: TextStyle(color: Colors.white),
                 ),
-                style: const TextStyle(
-                  color: Colors.white,
-                ),
+                style: const TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 15.0),
               TextField(
@@ -73,13 +73,9 @@ class _TodoScreenState extends State<TodoScreen> {
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   hintText: 'Enter description',
-                  hintStyle: TextStyle(
-                    color: Colors.white,
-                  ),
+                  hintStyle: TextStyle(color: Colors.white),
                 ),
-                style: const TextStyle(
-                  color: Colors.white,
-                ),
+                style: const TextStyle(color: Colors.white),
               ),
             ],
           ),
@@ -103,15 +99,14 @@ class _TodoScreenState extends State<TodoScreen> {
                 if (_editingTask != null) {
                   _editingTask!.name = title;
                   _editingTask!.description = description;
-                  await _remoteDataSource.updateTask(_editingTask!);
+                  await _remoteDataSource!.updateTask(_editingTask!);
                 } else {
                   final newTask = ToDo(
-                    id: '',
                     name: title,
                     description: description,
                     isCompleted: false,
                   );
-                  await _remoteDataSource.addTask(newTask);
+                  await _remoteDataSource!.addTask(newTask);
                 }
 
                 _titleController.clear();
@@ -135,7 +130,7 @@ class _TodoScreenState extends State<TodoScreen> {
   }
 
   Future<void> _clearAllTasks() async {
-    await _remoteDataSource.clearTasks();
+    await _remoteDataSource!.clearTasks();
     await _loadTasks();
   }
 
@@ -180,73 +175,72 @@ class _TodoScreenState extends State<TodoScreen> {
                   'No tasks yet!',
                   style: TextStyle(
                     fontSize: 18.0,
-                    color: Colors.grey[800],
+                    color: Colors.grey[400],
                   ),
                 ),
               )
             : ListView.builder(
                 itemCount: _tasks.length,
                 itemBuilder: (context, index) {
-                  ToDo task = _tasks[index];
-                  return Column(
-                    children: [
-                      Card(
-                        color: Colors.grey[800],
-                        child: ListTile(
-                          leading: Checkbox(
-                            checkColor: Colors.white,
-                            activeColor: Colors.red[500],
-                            value: task.isCompleted,
-                            onChanged: (bool? value) async {
-                              task.isCompleted = value!;
-                              await _remoteDataSource.updateTask(task);
-                              setState(() {});
-                            },
-                            side: const BorderSide(
-                              color: Colors.white,
-                              width: 1.5,
-                            ),
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                iconSize: 35.0,
-                                color: Colors.blue[500],
-                                icon: const Icon(Icons.edit),
-                                onPressed: () => _showTaskDialog(task: task),
-                              ),
-                              IconButton(
-                                iconSize: 38.0,
-                                color: Colors.red[500],
-                                icon: const Icon(Icons.delete_forever_rounded),
-                                onPressed: () async {
-                                  await _remoteDataSource.deleteTask(task);
-                                  _loadTasks();
-                                },
-                              ),
-                            ],
-                          ),
-                          title: Text(
-                            task.name,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18.0,
-                              color: Colors.white,
-                            ),
-                          ),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => DetailsScreen(task: task),
-                              ),
-                            );
-                          },
+                  final task = _tasks[index];
+                  return Card(
+                    color: Colors.grey[800],
+                    child: ListTile(
+                      leading: Checkbox(
+                        checkColor: Colors.white,
+                        activeColor: Colors.red[500],
+                        value: task.isCompleted,
+                        onChanged: (bool? value) async {
+                          task.isCompleted = value ?? false;
+                          await _remoteDataSource!.updateTask(task);
+                          _loadTasks();
+                        },
+                        side: const BorderSide(
+                          color: Colors.white,
+                          width: 1.5,
                         ),
                       ),
-                      const SizedBox(height: 5.0),
-                    ],
+                      title: Text(
+                        task.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18.0,
+                          color: Colors.white,
+                        ),
+                      ),
+                      subtitle: Text(
+                        task.description,
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.blue),
+                            onPressed: () {
+                              _showTaskDialog(task: task);
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_forever_rounded,
+                                color: Colors.red),
+                            onPressed: () async {
+                              await _remoteDataSource!.deleteTask(task);
+                              _loadTasks();
+                            },
+                          ),
+                        ],
+                      ),
+                      onTap: () {
+                        // Navigate to DetailsScreen when tapping the tile
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DetailsScreen(task: task),
+                          ),
+                        );
+                      },
+                    ),
                   );
                 },
               ),

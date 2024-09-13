@@ -1,11 +1,12 @@
 import 'package:hive/hive.dart';
+import 'package:uuid/uuid.dart';
 
 part 'todos.g.dart';
 
 @HiveType(typeId: 0)
 class ToDo extends HiveObject {
   @HiveField(0)
-  String? id;
+  String id;
 
   @HiveField(1)
   String name;
@@ -17,24 +18,24 @@ class ToDo extends HiveObject {
   bool isCompleted;
 
   ToDo({
-    this.id,
+    String? id,
     required this.name,
     required this.description,
     this.isCompleted = false,
-  });
+  }) : id = id ?? Uuid().v4();
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'name': name,
       'description': description,
-      'isCompleted': isCompleted ? 1 : 0,
+      'isCompleted': isCompleted ? 1 : 0, // Store as 1 or 0
     };
   }
 
   factory ToDo.fromMap(Map<dynamic, dynamic> map) {
     return ToDo(
-      id: map['id'] as String?,
+      id: map['id'] as String,
       name: map['name'] as String? ?? '',
       description: map['description'] as String? ?? '',
       isCompleted: (map['isCompleted'] is int)

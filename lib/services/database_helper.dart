@@ -17,35 +17,43 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDatabase() async {
-    String path = join(await getDatabasesPath(), 'todos.db');
+    final databasePath = await getDatabasesPath();
+    final path = join(databasePath, 'todos.db');
+
     return await openDatabase(
       path,
       version: 1,
-      onCreate: (db, version) async {
-        await db.execute('''
-          CREATE TABLE todos(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT,
-            description TEXT,
-            isCompleted INTEGER
+      onCreate: (db, version) {
+        return db.execute('''
+          CREATE TABLE todos (
+            id TEXT PRIMARY KEY, 
+            name TEXT, 
+            description TEXT, 
+            isCompleted INTEGER NOT NULL
           )
-        ''');
+          ''');
       },
     );
   }
 
   Future<void> addTask(ToDo task) async {
     final db = await database;
-    await db.insert('todos', task.toMap());
+    try {
+      await db.insert(
+        'todos',
+        task.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    } catch (e) {
+      print('Error inserting task: $e'); // Log the error
+    }
   }
 
   Future<List<ToDo>> fetchTasks() async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query('todos');
     return List.generate(maps.length, (i) {
-      return ToDo.fromMap(
-        maps[i],
-      );
+      return ToDo.fromMap(maps[i]);
     });
   }
 
@@ -59,7 +67,7 @@ class DatabaseHelper {
     );
   }
 
-  Future<void> deleteTask(int id) async {
+  Future<void> deleteTask(String id) async {
     final db = await database;
     await db.delete(
       'todos',

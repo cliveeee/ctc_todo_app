@@ -1,4 +1,7 @@
 PODS:
+  - connectivity_plus (0.0.1):
+    - Flutter
+    - FlutterMacOS
   - Firebase/CoreOnly (11.0.0):
     - FirebaseCore (= 11.0.0)
   - Firebase/Database (11.0.0):
@@ -46,6 +49,7 @@ PODS:
     - FlutterMacOS
 
 DEPENDENCIES:
+  - connectivity_plus (from `.symlinks/plugins/connectivity_plus/darwin`)
   - firebase_core (from `.symlinks/plugins/firebase_core/ios`)
   - firebase_database (from `.symlinks/plugins/firebase_database/ios`)
   - Flutter (from `Flutter`)
@@ -64,6 +68,8 @@ SPEC REPOS:
     - leveldb-library
 
 EXTERNAL SOURCES:
+  connectivity_plus:
+    :path: ".symlinks/plugins/connectivity_plus/darwin"
   firebase_core:
     :path: ".symlinks/plugins/firebase_core/ios"
   firebase_database:
@@ -76,6 +82,7 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/sqflite/darwin"
 
 SPEC CHECKSUMS:
+  connectivity_plus: ddd7f30999e1faaef5967c23d5b6d503d10434db
   Firebase: 9f574c08c2396885b5e7e100ed4293d956218af9
   firebase_core: ba84e940cf5cbbc601095f86556560937419195c
   firebase_database: e743f2d1a3957e554e3b9b715eeac5e0eda45dac
