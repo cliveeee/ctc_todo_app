@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:todo_flutter/models/todos.dart';
-import 'package:todo_flutter/models/details_screen.dart'; // Import the DetailsScreen
-import 'package:todo_flutter/services/todo_data_source_factory.dart'; // Adjust the import according to your file structure
+import 'package:todo_flutter/models/details_screen.dart';
+import 'package:todo_flutter/services/todo_data_source_factory.dart';
 import 'package:todo_flutter/services/todo_data_source.dart';
 
 class TodoScreen extends StatefulWidget {
@@ -14,7 +14,7 @@ class TodoScreen extends StatefulWidget {
 class _TodoScreenState extends State<TodoScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  ToDoDataSource? _remoteDataSource; // Updated to use ToDoDataSource
+  ToDoDataSource? _remoteDataSource;
   List<ToDo> _tasks = [];
   ToDo? _editingTask;
 
@@ -191,9 +191,24 @@ class _TodoScreenState extends State<TodoScreen> {
                         activeColor: Colors.red[500],
                         value: task.isCompleted,
                         onChanged: (bool? value) async {
-                          task.isCompleted = value ?? false;
-                          await _remoteDataSource!.updateTask(task);
-                          _loadTasks();
+                          // Update the local state to reflect the change
+                          setState(() {
+                            task.isCompleted = value ??
+                                false; // Update the local task's completion status
+                          });
+
+                          // Debugging information
+                          print(
+                              'Updating task ${task.id} with completion status: ${task.isCompleted}');
+
+                          try {
+                            // Call the updateTask method to update Firebase
+                            await _remoteDataSource!.updateTask(task);
+                            print('Task updated successfully in Firebase');
+                          } catch (e) {
+                            // Handle any errors that occur during the update
+                            print('Failed to update task in Firebase: $e');
+                          }
                         },
                         side: const BorderSide(
                           color: Colors.white,

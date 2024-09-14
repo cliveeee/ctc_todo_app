@@ -4,81 +4,79 @@ import 'package:todo_flutter/models/todos.dart';
 import 'package:todo_flutter/services/todo_data_source.dart';
 
 class SQLiteService implements ToDoDataSource {
-  static final SQLiteService _instance = SQLiteService._internal();
-  factory SQLiteService() => _instance;
+  static Database? _database;
 
-  SQLiteService._internal();
-
-  Database? _database;
-
-  Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDatabase();
-    return _database!;
+  // Make sure to initialize SQLite asynchronously
+  static Future<SQLiteService> createAsync() async {
+    SQLiteService instance = SQLiteService();
+    await instance._initDatabase();
+    return instance;
   }
 
-  Future<Database> _initDatabase() async {
-    String path = join(await getDatabasesPath(), 'todo_database.db');
-    return await openDatabase(
-      path,
-      onCreate: (db, version) {
-        return db.execute(
-          'CREATE TABLE todos(id TEXT PRIMARY KEY, name TEXT, description TEXT, isCompleted INTEGER)',
-        );
-      },
-      version: 2, // Increment the version number for schema changes
-      onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 2) {
-          // Handle any migrations needed here if necessary
-        }
-      },
-    );
+  // Initialize the SQLite database
+  Future<void> _initDatabase() async {
+    if (_database == null) {
+      _database = await openDatabase(
+        join(await getDatabasesPath(), 'todos.db'),
+        onCreate: (db, version) {
+          return db.execute(
+            'CREATE TABLE todos(id TEXT PRIMARY KEY, name TEXT, description TEXT, isCompleted INTEGER)',
+          );
+        },
+        version: 1,
+      );
+    }
   }
 
+  // Implement CRUD methods for SQLite
   @override
-  Future<void> addTask(ToDo task) async {
-    final db = await database;
-
-    await db.insert(
-      'todos',
-      task.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+  Future<void> addTask(ToDo todo) async {
+    final db = _database;
+    if (db != null) {
+      await db.insert('todos', todo.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+    }
   }
 
   @override
   Future<List<ToDo>> fetchTasks() async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('todos');
-    return List.generate(maps.length, (i) {
-      return ToDo.fromMap(maps[i]);
-    });
+    final db = _database;
+    if (db != null) {
+      final List<Map<String, dynamic>> maps = await db.query('todos');
+      return List.generate(maps.length, (i) {
+        return ToDo(
+          id: maps[i]['id'],
+          name: maps[i]['name'],
+          description: maps[i]['description'],
+          isCompleted: maps[i]['isCompleted'] == 1,
+        );
+      });
+    }
+    return [];
   }
 
   @override
   Future<void> updateTask(ToDo task) async {
-    final db = await database;
-    await db.update(
-      'todos',
-      task.toMap(),
-      where: 'id = ?',
-      whereArgs: [task.id],
-    );
+    final db = _database;
+    if (db != null) {
+      await db
+          .update('todos', task.toMap(), where: 'id = ?', whereArgs: [task.id]);
+    }
   }
 
   @override
   Future<void> deleteTask(ToDo task) async {
-    final db = await database;
-    await db.delete(
-      'todos',
-      where: 'id = ?',
-      whereArgs: [task.id],
-    );
+    final db = _database;
+    if (db != null) {
+      await db.delete('todos', where: 'id = ?', whereArgs: [task.id]);
+    }
   }
 
   @override
   Future<void> clearTasks() async {
-    final db = await database;
-    await db.delete('todos');
+    final db = _database;
+    if (db != null) {
+      await db.delete('todos');
+    }
   }
 }

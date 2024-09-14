@@ -22,7 +22,7 @@ class ToDo extends HiveObject {
     required this.name,
     required this.description,
     this.isCompleted = false,
-  }) : id = id ?? Uuid().v4();
+  }) : id = id ?? const Uuid().v4();
 
   Map<String, dynamic> toMap() {
     return {
