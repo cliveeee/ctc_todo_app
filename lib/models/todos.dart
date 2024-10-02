@@ -29,7 +29,7 @@ class ToDo extends HiveObject {
       'id': id,
       'name': name,
       'description': description,
-      'isCompleted': isCompleted ? 1 : 0, // Store as 1 or 0
+      'isCompleted': isCompleted ? 1 : 0,
     };
   }
 

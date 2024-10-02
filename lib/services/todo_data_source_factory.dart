@@ -19,10 +19,9 @@ class ToDoDataSourceFactory implements ToDoDataSource {
   static Future<bool> _isInternetAvailable() async {
     try {
       final result = await http.get(Uri.parse('https://www.google.com'));
-      return result.statusCode ==
-          200; // Internet is accessible if the request succeeds
+      return result.statusCode == 200;
     } catch (e) {
-      return false; // No internet if the request fails
+      return false;
     }
   }
 
@@ -33,15 +32,12 @@ class ToDoDataSourceFactory implements ToDoDataSource {
 
     ToDoDataSourceFactory service = ToDoDataSourceFactory();
 
-    // Check internet connectivity
     final isInternetAvailable = await _isInternetAvailable();
     if (isInternetAvailable) {
       print('Using RemoteDatabase (Firebase)');
-      service._remote =
-          RemoteDataSource(); // Always initialize remote data source when there's internet
+      service._remote = RemoteDataSource();
     }
 
-    // Initialize local data source based on platform
     if (kIsWeb) {
       var box = await Hive.openBox<ToDo>('todos');
       print('Using Hive database for web');
@@ -75,7 +71,7 @@ class ToDoDataSourceFactory implements ToDoDataSource {
       }
     } catch (e) {
       print('Error fetching tasks: $e');
-      return []; // Return an empty list on error
+      return [];
     }
   }
 

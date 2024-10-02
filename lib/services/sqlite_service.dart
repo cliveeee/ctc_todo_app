@@ -6,14 +6,12 @@ import 'package:todo_flutter/services/todo_data_source.dart';
 class SQLiteService implements ToDoDataSource {
   static Database? _database;
 
-  // Make sure to initialize SQLite asynchronously
   static Future<SQLiteService> createAsync() async {
     SQLiteService instance = SQLiteService();
     await instance._initDatabase();
     return instance;
   }
 
-  // Initialize the SQLite database
   Future<void> _initDatabase() async {
     if (_database == null) {
       _database = await openDatabase(
@@ -28,7 +26,6 @@ class SQLiteService implements ToDoDataSource {
     }
   }
 
-  // Implement CRUD methods for SQLite
   @override
   Future<void> addTask(ToDo todo) async {
     final db = _database;

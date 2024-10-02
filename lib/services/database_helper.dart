@@ -45,7 +45,7 @@ class DatabaseHelper {
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
     } catch (e) {
-      print('Error inserting task: $e'); // Log the error
+      print('Error inserting task: $e');
     }
   }
 
